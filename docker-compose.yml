@@ -1,0 +1,41 @@
+---
+version: "3.9"
+
+services:
+  kafka:
+    depends_on:
+      - zookeeper
+    environment:
+      ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: "1"
+      KAFKA_LISTENERS: "LISTENER_EXTERNAL://:9092,LISTENER_INTERNAL://:9091"
+      KAFKA_ADVERTISED_LISTENERS: "LISTENER_EXTERNAL://localhost:9092,LISTENER_INTERNAL://kafka:9091"
+      KAFKA_LISTENER_SECURITY_PROTOCOL: "LISTENER_EXTERNAL:PLAINTEXT,LISTENER_INTERNAL:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER: "LISTENER_INTERNAL"
+    image: "076945025318.dkr.ecr.us-west-2.amazonaws.com/clio/services/kafka:bullseye"
+    ports:
+      - 9092:9092
+    command: "/usr/local/bin/wait_for.sh -t 45 zookeeper:2181 -- bash -c 'sleep 5 && /usr/local/bin/environment_entrypoint.sh kafka /opt/kafka/config/server.properties -- /opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties'"
+    entrypoint: []
+    networks:
+      - messaging
+
+  zookeeper:
+    environment:
+      ZOOKEEPER_SERVERS: "zookeeper"
+      ZK_INSTANCE_ID: "1"
+    image: "076945025318.dkr.ecr.us-west-2.amazonaws.com/clio/services/zookeeper:bullseye"
+    ports:
+      - 2181:2181
+      - 2888:2888
+      - 3888:3888
+    volumes:
+      - "zookeeperdata:/var/lib/zookeeper:delegated"
+    networks:
+      - messaging
+
+volumes:
+  zookeeperdata:
+
+networks:
+  messaging:
